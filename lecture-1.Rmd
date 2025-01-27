@@ -172,11 +172,49 @@ Poisson Dist'n
 * Doesn't have a bound (but typically we only plot the first [few])
 * Anything related to occurrence can be related to Poisson
 
+Geometric Dist'n
+
+* # of trials until next success
+* If you're thinking about waiting time/distance in discrete space
+* Waiting time until [something] or distance walked until [something]
+* Discrete variable
+
+Exponential dist'n
+
+* Waiting time/distance (like geometric dist'n)
+* Continuous variable
+
+Negative Binomical Dist'n
+
+* # of trials until *k* successes occur
+* Less likely to use in this class(?)
+
+Gamma Dist'n
+
+* Waiting time/distance until *k*th occurrence
+* Less likely to use in this class(?)
+
+And finally, the GOAT
+
+Normal/Gaussian Dist'n
+
+* Bell-shaped, symmetric PDF
+* Widely used to describe/model random errors
 
 
+Why is normal dist'n so common? Central Limit Theorem (CLT)
 
+* States that: Sum of many independent, identically dist'd random variables follow a normal dist'n, no matter what kind of dist'n the random variable has.
+* One of the cornerstones of inferential stats.
+* Reason why norm'y dist'd var.s occur so often in nature
 
+Log-normal Dist'n
 
+* Long tail
+* Also common in nature
+* If the natlog of a variable *x* follows normal dist'n, then *x* follows a log-normal dist'n.
 
+Beta Dist'n
 
+* Flexible fitting to lots of observed dist'ns
 
