@@ -57,8 +57,10 @@ rainfall <- scan("./homeworks/HM0_rainfall.txt")
 
 ```{r}
 # please print the length of the rainfall time series
+
 length(rainfall) |> 
   print()
+
 ```
 
 ### 2. Find the number of rainy days
@@ -67,6 +69,11 @@ Please reproduce the example presented in the first lecture on finding the numbe
 
 ```{r}
 # Find the number of rainy days
+
+rainfall[rainfall > 0] |> 
+  length() |> 
+  print()
+
 ```
 
 ### 3. Find the longest dry period (consecutive dry days)
