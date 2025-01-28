@@ -1,0 +1,103 @@
+---
+output:
+  html_document:
+    df_print: paged
+---
+
+# BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
+
+### ***Spring 2025***
+
+### Instructor: **Xiangtao Xu** ( ✉️ [xx286\@cornell.edu](mailto:xx286@cornell.edu){.email})
+
+### Teaching Assistant: **Yixin Ma** (✉️ [ym524\@cornell.edu](mailto:ym524@cornell.edu){.email})
+
+## [Homework 0]{style="color:royalblue"} *Hello World*
+
+### 0. Configure R, RStudio, Rmarkdown
+
+[*(Please complete before the class)*]{style="color:red"}
+
+For R users, we are going to use Rstudio and Rmarkdown as the major platform for most of the numerical labs and homework. R markdown is a simple and easy to use plain text language used to combine your R code, results from your data analysis (including plots and tables) and written commentary into a single nicely formatted and reproducible document.
+
+#### 0.1 Install R/Rstudio
+
+First, install R and Rstudio (if you have not done that yet) following [this link](https://posit.co/download/rstudio-desktop/).
+
+#### 0.2 Install Rmarkdown and other necessary packages
+
+Then, run the following command in your Rstudio
+
+```{r install-rmarkdown, eval=FALSE, include=TRUE}
+# Install from CRAN
+install.packages('rmarkdown', dep = TRUE)
+install.packages('microbenchmark', dep = TRUE)
+```
+
+#### 0.3 Basics of Rmarkdown
+
+Rmakrdown allows for inserting code blocks within markdown texts using \`\`\`. Please Go over Chapters `8.3`, `8.4`, and `8.5` of the [intro2r](https://intro2r.com/get-started-with-r-markdown.html) documentation
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+```{r}
+print("Hello World")
+```
+
+### 1. Print the length of rainfall data
+
+We have provided codes to read an array of daily rainfall data below. Please run the codes and print the length of the data array (i.e. how many data points there are) based on examples during the lecture (or with the help of online or AI resources).
+
+```{r}
+# load the rainfall data
+rainfall <- scan("./HM0_rainfall.txt")
+```
+
+```{r}
+# please print the length of the rainfall time series
+
+```
+
+### 2. Find the number of rainy days
+
+Please reproduce the example presented in the first lecture on finding the number of rainy days (the first one with loop).
+
+```{r}
+# Find the number of rainy days
+```
+
+### 3. Find the longest dry period (consecutive dry days)
+
+Please reproduce the example presented in the first lecture.
+
+```{r}
+# Find the longest dry period (consecutive dry days)
+```
+
+### 4. Compare different vectorized and un-vectorized calculations
+
+Please reproduce the example presented in the first lecture.
+
+```{r}
+# Unvectorized version
+
+# Vectorized version
+
+# Check whether they give the same results
+
+```
+
+```{r}
+# Time the unvectorized and vectorized versions
+
+# Print the timing results
+
+```
+### 5. Find the longest wet period (consecutive wet days)
+
+Based on the examples in the lecture, try to find the longest wet period in the data set. Please include appropriate annotations/comments for your codes
+
+```{r}
+# Find the longest wet period (consecutive wet days)
+
+```
