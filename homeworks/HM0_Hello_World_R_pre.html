@@ -1810,10 +1810,10 @@ rainfall |&gt;
   get_rainy_days_vectorised() |&gt; 
   print()</code></pre>
 <pre><code>## [1] 45</code></pre>
-<pre class="r"><code>library(microbenchmark)</code></pre>
-<pre><code>## Warning: package &#39;microbenchmark&#39; was built under R version 4.4.2</code></pre>
 <pre class="r"><code># Time the unvectorized and vectorized versions
-timing_results &lt;- microbenchmark(
+library(microbenchmark)</code></pre>
+<pre><code>## Warning: package &#39;microbenchmark&#39; was built under R version 4.4.2</code></pre>
+<pre class="r"><code>timing_results &lt;- microbenchmark(
   unvectorised = get_rainy_days(rainfall),
   vectorised = get_rainy_days_vectorised(rainfall),
   times = 1000
@@ -1825,15 +1825,56 @@ timing_results |&gt;
   print()</code></pre>
 <pre><code>## Unit: nanoseconds
 ##          expr  min    lq    mean median    uq    max neval cld
-##  unvectorised 9800 10400 10821.9  10700 10900  49400  1000  a 
-##    vectorised  500   600  1547.0    600   700 718100  1000   b</code></pre>
+##  unvectorised 9900 10400 10643.5  10700 10900  11700  1000  a 
+##    vectorised  500   600  1484.8    600   700 727600  1000   b</code></pre>
 </div>
 <div id="find-the-longest-wet-period-consecutive-wet-days" class="section level3">
 <h3>5. Find the longest wet period (consecutive wet days)</h3>
 <p>Based on the examples in the lecture, try to find the longest wet
 period in the data set. Please include appropriate annotations/comments
 for your codes</p>
-<pre class="r"><code># Find the longest wet period (consecutive wet days)</code></pre>
+<pre class="r"><code># Make a function to get the length of a wet period
+find_wet_period &lt;- function(rainfall_input, start_index) {
+  if (rainfall_input[start_index] == 0) {
+    # If the input day is dry (0), then the longest wet period has to be 0
+    wet_period_length &lt;- 0
+  } else {
+    # If the input day is wet (&gt;0), then the loop will go over the data until the next dry day
+    array_length &lt;- length(rainfall_input)
+    for (i in start_index:array_length) {
+      # Breaks out of the loop if we encounter a dry day
+      if (rainfall_input[i] == 0) {
+        break
+      }
+    }
+    # Then: count the number of days in the wet period
+    if (i == array_length &amp; rainfall_input[i] &gt; 0) {
+      # If the last day in a wet period is also the last record in the dataset
+      # then the wet period length is the number of days between the index and the last record
+      wet_period_length = i - start_index + 1
+    } else {
+      wet_period_length = i - start_index
+    }
+  }
+  # Finish the function
+  return(wet_period_length)
+}
+
+# Time to find the length of consecutive wet days for each given day. 
+# Make a list full of 0s that will get overwritten in the loop below
+wet_period_list &lt;- numeric(length(rainfall))
+
+# Fill in that list with values using the function written above
+for (i in 1:length(rainfall)) {
+  wet_period_list[i] &lt;- find_wet_period(rainfall, i)
+}
+
+# Find the maximum value on that list (the longest wet period)
+wet_period_list |&gt; 
+  max() |&gt; 
+  print()</code></pre>
+<pre><code>## [1] 6</code></pre>
+<pre class="r"><code>## This may not be the fastest method, but I don&#39;t understand how to make a vectorised version of this.</code></pre>
 </div>
 </div>
 </div>

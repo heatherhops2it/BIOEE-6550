@@ -33,14 +33,12 @@ Then, run the following command in your Rstudio
 ```{r install-rmarkdown, eval=FALSE, include=TRUE}
 # Install from CRAN
 install.packages('rmarkdown', dep = TRUE)
-library(rmarkdown)
 install.packages('microbenchmark', dep = TRUE)
-library(microbenchmark)
 ```
 
 #### 0.3 Basics of Rmarkdown
 
-Rmakrdown allows for inserting code blocks within markdown texts using \`\`\`. Please Go over Chapters `8.3`, `8.4`, and `8.5` of the [intro2r](https://intro2r.com/get-started-with-r-markdown.html) documentation
+Rmarkdown allows for inserting code blocks within markdown texts using \`\`\`. Please Go over Chapters `8.3`, `8.4`, and `8.5` of the [intro2r](https://intro2r.com/get-started-with-r-markdown.html) documentation
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
 
@@ -195,6 +193,7 @@ rainfall |>
 
 ```{r}
 # Time the unvectorized and vectorized versions
+library(microbenchmark)
 timing_results <- microbenchmark(
   unvectorised = get_rainy_days(rainfall),
   vectorised = get_rainy_days_vectorised(rainfall),
@@ -212,6 +211,49 @@ timing_results |>
 Based on the examples in the lecture, try to find the longest wet period in the data set. Please include appropriate annotations/comments for your codes
 
 ```{r}
-# Find the longest wet period (consecutive wet days)
 
+# Make a function to get the length of a wet period
+find_wet_period <- function(rainfall_input, start_index) {
+  if (rainfall_input[start_index] == 0) {
+    # If the input day is dry (0), then the longest wet period has to be 0
+    wet_period_length <- 0
+  } else {
+    # If the input day is wet (>0), then the loop will go over the data until the next dry day
+    array_length <- length(rainfall_input)
+    for (i in start_index:array_length) {
+      # Breaks out of the loop if we encounter a dry day
+      if (rainfall_input[i] == 0) {
+        break
+      }
+    }
+    # Then: count the number of days in the wet period
+    if (i == array_length & rainfall_input[i] > 0) {
+      # If the last day in a wet period is also the last record in the dataset
+      # then the wet period length is the number of days between the index and the last record
+      wet_period_length = i - start_index + 1
+    } else {
+      wet_period_length = i - start_index
+    }
+  }
+  # Finish the function
+  return(wet_period_length)
+}
+
+# Time to find the length of consecutive wet days for each given day. 
+# Make a list full of 0s that will get overwritten in the loop below
+wet_period_list <- numeric(length(rainfall))
+
+# Fill in that list with values using the function written above
+for (i in 1:length(rainfall)) {
+  wet_period_list[i] <- find_wet_period(rainfall, i)
+}
+
+# Find the maximum value on that list (the longest wet period)
+wet_period_list |> 
+  max() |> 
+  print()
+
+## This may not be the fastest method, but I don't understand how to make a vectorised version of this.
 ```
+
+
