@@ -56,7 +56,6 @@ rainfall <- scan("./homeworks/HM0_rainfall.txt")
 ```
 
 ```{r}
-# please print the length of the rainfall time series
 
 length(rainfall) |> 
   print()
@@ -68,11 +67,20 @@ length(rainfall) |>
 Please reproduce the example presented in the first lecture on finding the number of rainy days (the first one with loop).
 
 ```{r}
-# Find the number of rainy days
+# creates a counter object to be overwritten with the number of rainy days
+rainy_days <- 0
 
-rainfall[rainfall > 0] |> 
-  length() |> 
-  print()
+# loop counts days
+for (i in 1:length(rainfall)) {
+  i_rain <- rainfall[i]
+  
+  # 'if' function adds to the counter when there is a value above 0 (i.e., there is rain)
+  if (i_rain > 0) {
+    rainy_days <- rainy_days + 1
+  }
+}
+
+print(rainy_days)
 
 ```
 
