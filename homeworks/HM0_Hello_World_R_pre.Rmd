@@ -89,7 +89,62 @@ print(rainy_days)
 Please reproduce the example presented in the first lecture.
 
 ```{r}
-# Find the longest dry period (consecutive dry days)
+
+find_dry_period <- function(rainfall_input, start_index) {
+  if (rainfall_input[start_index] > 0) {
+    
+    # If the input day is rainy (>0), then the longest dry period has to be 0
+    dry_period_length <- 0
+    
+  } else {
+    
+    # If the input day is dry (0), then the loop will go over the data until the next wet day
+    array_length <- length(rainfall_input)
+    
+    for (i in start_index:array_length) {
+      
+      # Breaks out of the loop if we encounter a wet day
+      if (rainfall_input[i] > 0) {
+        break
+      }
+    }
+    
+    # Then: count the number of days in the dry period
+    
+    if (i == array_length & rainfall_input[i] == 0) {
+      
+      # If the last day in a dry period is also the last record in the dataset
+      # then the dry period length is the # of days between the index and the last record
+      dry_period_length = i - start_index + 1
+      
+    } else {
+      
+      dry_period_length = i - start_index
+      }
+  }
+  
+  #finish the function
+  return(dry_period_length)
+}
+
+
+# Find the length of consecutive dry days for each day, then store them in a list
+# Make a list full of 0s that will get overwritten in the for loop below
+dry_period_list <- numeric(length(rainfall))
+
+# Fill the above list with values using the function written above
+for (i in 1:length(rainfall)) {
+  dry_period_list[i] <- find_dry_period(rainfall, i)
+}
+
+
+# Print the list
+print(dry_period_list)
+
+# Find the maximum value (longest dry period)
+max(dry_period_list) |> 
+  print()
+
 ```
 
 ### 4. Compare different vectorized and un-vectorized calculations
