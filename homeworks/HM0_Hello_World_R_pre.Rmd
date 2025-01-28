@@ -33,7 +33,9 @@ Then, run the following command in your Rstudio
 ```{r install-rmarkdown, eval=FALSE, include=TRUE}
 # Install from CRAN
 install.packages('rmarkdown', dep = TRUE)
+library(rmarkdown)
 install.packages('microbenchmark', dep = TRUE)
+library(microbenchmark)
 ```
 
 #### 0.3 Basics of Rmarkdown
@@ -52,7 +54,7 @@ We have provided codes to read an array of daily rainfall data below. Please run
 
 ```{r}
 # load the rainfall data
-rainfall <- scan("./homeworks/HM0_rainfall.txt")
+rainfall <- scan("./HM0_rainfall.txt")
 ```
 
 ```{r}
@@ -153,17 +155,56 @@ Please reproduce the example presented in the first lecture.
 
 ```{r}
 # Unvectorized version
+get_rainy_days <- function(rainfall_input) {
+  rainy_days <- 0
+  
+  # Loop over each index of the rainfall array
+  for (i in 1:length(rainfall)) {
+    # Access the rainfall value for the current index
+    i_rain <- rainfall[i]
+    
+    # Check if the current day has rain
+    if (i_rain > 0) {
+      # Increment the number of rainy days
+      rainy_days <- rainy_days + 1
+    }
+  }
+  
+  return(rainy_days)
+}
+
 
 # Vectorized version
+get_rainy_days_vectorised <- function(rainfall_input) {
+  rainy_days <- sum(rainfall_input > 0)
+  return(rainy_days)
+}
+
 
 # Check whether they give the same results
+rainfall |> 
+  get_rainy_days() |> 
+  print()
+
+rainfall |> 
+  get_rainy_days_vectorised() |> 
+  print()
+
 
 ```
 
 ```{r}
 # Time the unvectorized and vectorized versions
+timing_results <- microbenchmark(
+  unvectorised = get_rainy_days(rainfall),
+  vectorised = get_rainy_days_vectorised(rainfall),
+  times = 1000
+)
+
 
 # Print the timing results
+timing_results |> 
+  print()
 
 ```
 ### 5. Find the longest wet period (consecutive wet days)
