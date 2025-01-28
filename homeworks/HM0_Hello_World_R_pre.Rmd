@@ -2,6 +2,8 @@
 output:
   html_document:
     df_print: paged
+editor_options: 
+  chunk_output_type: console
 ---
 
 # BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
@@ -50,12 +52,13 @@ We have provided codes to read an array of daily rainfall data below. Please run
 
 ```{r}
 # load the rainfall data
-rainfall <- scan("./HM0_rainfall.txt")
+rainfall <- scan("./homeworks/HM0_rainfall.txt")
 ```
 
 ```{r}
 # please print the length of the rainfall time series
-
+length(rainfall) |> 
+  print()
 ```
 
 ### 2. Find the number of rainy days
