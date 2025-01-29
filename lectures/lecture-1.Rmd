@@ -200,6 +200,7 @@ Normal/Gaussian Dist'n
 
 * Bell-shaped, symmetric PDF
 * Widely used to describe/model random errors
+* continues into infinity on either end (?) so it can have negative values (theoretically) (?)
 
 
 Why is normal dist'n so common? Central Limit Theorem (CLT)
@@ -213,6 +214,7 @@ Log-normal Dist'n
 * Long tail
 * Also common in nature
 * If the natlog of a variable *x* follows normal dist'n, then *x* follows a log-normal dist'n.
+* Does not have negative values!
 
 Beta Dist'n
 
