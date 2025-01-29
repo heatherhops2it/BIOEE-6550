@@ -1,0 +1,354 @@
+---
+output:
+  html_document:
+    df_print: paged
+---
+
+# BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
+
+### ***Spring 2025***
+
+### Instructor: **Xiangtao Xu** ( ✉️ [xx286\@cornell.edu](mailto:xx286@cornell.edu){.email})
+
+### Teaching Assistant: **Yixin Ma** (✉️ [ym524\@cornell.edu](mailto:ym524@cornell.edu){.email})
+
+## [Lab 1]{style="color:royalblue"} *Organize Tabular Data and Probability*
+
+In this Lab, we will introduce typical workflow to explore tabular data (e.g., `csv` or `xlsx` files). The main learning objectives of today include:
+
+-   Access tabular data with commonly used packages/API
+-   Practice indexing, subsetting, and grouping that are useful for data cleaning/preparation before further analysis
+-   Generate histogram plots and descriptive statistics
+-   Overlay/Fit theoretical distributions based on observed data
+
+**For R users**, please install necessary packages by running the following commands in your console `install.packages('tidyverse','MASS','ggplot2',dep=TRUE)`
+
+### 0. Codes used in lecture
+
+This section contains code and figure examples mentioned in the course, using `lab1_rainfall.csv` (available on Canvas).
+
+#### 0.1 Read data
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse) # load the packages
+
+df_rain <- read_csv('./lab1_rainfall.csv')# read csv file
+# for excel spreadsheet, use read_excel
+
+print(head(df_rain,10))
+# print first 10 columns
+
+summary(df_rain)
+# print descriptive statistics
+
+```
+
+#### 0.2 Histogram of rainfall amounts
+
+```{r}
+library(ggplot2)
+# load the plotting package
+
+# Create a histogram using ggplot2
+ggplot(df_rain, aes(x = col2, y=after_stat(density))) + 
+  # y=after_stat(density) means that we are plotting the proportion/frequency
+  # if we remove y=after_stat(density), then y axis is number of occurrence
+  geom_histogram(binwidth=5, 
+                 fill = "blue", alpha = 0.7, color = "black")+
+  labs(x = "Rainfall [mm]", y = "Fraction", 
+       title = "Distribution of Rainfall") +
+  theme_minimal()
+
+
+```
+
+#### 0.3 Box plot and descriptive statistics
+
+```{r}
+rainfall = df_rain$col2
+rainfall = rainfall[rainfall > 0] # only include rainy days
+
+ggplot(, aes( y = rainfall)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 16, fill = "skyblue") +
+  labs(y = "Rainfall [mm]") +  # Set the y-axis label
+  theme_minimal() +
+  theme(axis.text.x = element_blank(),  # Remove x-axis labels
+        axis.ticks.x = element_blank())  # Remove x-axis ticks
+```
+
+```{r}
+# use the base R functions to get the values
+print(mean(rainfall))
+print(var(rainfall))
+print(median(rainfall))
+print(quantile(rainfall,c(0.25,0.50,0.75)))
+print(paste(max(rainfall), min(rainfall)))
+```
+
+#### 0.4 Theoretical distributions
+
+```{r}
+# Binomial distribution
+
+# Parameters
+event_space <- 0:10  # One lion hunting 10 times
+p1 <- 0.1            # 10% success rate
+p2 <- 0.2            # 20% success rate
+n <- 10              # 10 trials
+
+# Compute probabilities
+y1 <- dbinom(event_space, size = n, prob = p1)
+y2 <- dbinom(event_space, size = n, prob = p2)
+
+ggplot() +
+  geom_line(aes(x = event_space, y = y1, 
+                color = "10% success", 
+                linetype = "10% success"), linewidth = 1) +
+  geom_line(aes(x = event_space, y = y2, 
+                color = "20% success", 
+                linetype = "20% success"), linewidth = 1) +
+  labs(
+    x = "# of successes", y = "Probability",
+    title = "Theoretical Binomial Distribution",
+    color = "Success Rate",      # Legend title for color
+    linetype = "Success Rate"    # Legend title for line type
+  ) +
+  scale_color_manual(
+    values = c("10% success" = "red", "20% success" = "black")
+  ) +
+  scale_linetype_manual(
+    values = c("10% success" = "solid", "20% success" = "dashed")
+  ) +
+  guides(
+    color = guide_legend(order = 1),
+    linetype = guide_legend(order = 1) # try to change order = 1 to order = 2 and see what happens
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# Poisson distribution
+
+census_filename <- './lab1_census.csv'
+
+# Luquillo census data, full 16ha
+df_census = read_csv(census_filename,show_col_types=FALSE)
+print(colnames(df_census))
+```
+
+```{r}
+# Generate K quadrats based on X and Y
+
+# Set parameters
+K <- 200
+set.seed(1)  # For reproducibility
+X <- runif(K, min = 0, max = 320)
+Y <- runif(K, min = 0, max = 500)
+# runif is to generate random number from uniform distribution
+
+N_bigtree <- numeric(K)  # Initialize an empty numeric vector with the length of K
+dbh_threshold <- 50
+
+# Loop over each quadrat
+for (i in seq_len(K)) {
+  # Apply the data mask to filter the census data
+  data_mask <- with(df_census,
+    X < X[i] + 10 & X >= X[i] - 10 &
+    Y < Y[i] + 10 & Y >= Y[i] - 10
+  )
+  
+  # Subset the data for the current quadrat
+  df_quadrat <- df_census[data_mask, ]
+  
+  # Count the number of "big trees"
+  N_bigtree[i] <- sum(df_quadrat$dbh_c1_cm > dbh_threshold, na.rm = TRUE)
+}
+
+```
+
+```{r}
+# Load the necessary package for distribution fitting
+library(MASS)
+
+# Fit a Poisson distribution to the data
+fit_result <- fitdistr(N_bigtree, "poisson",lower=0,upper=5)
+
+# Print the parameter of the Poisson distribution
+lambda <- fit_result$estimate["lambda"]
+cat("Lambda (Poisson parameter):", lambda, "\n")
+```
+
+```{r}
+
+# Overlay the theoretical PMF
+x <- seq(0,8, by=1)
+y <- dpois(x, lambda)
+           
+# Create a observed histogram
+ggplot() + 
+  geom_histogram(aes(x=N_bigtree,y=after_stat(density)),breaks=x-0.5) +
+  # there are many ways to define the bins in histogram, 
+  # and breaks define the bin boundaries
+  # we shift the breaks by -0.5 to avoid data falling on edges
+  geom_line(aes(x,y),linewidth=2,col="red") +
+  theme_minimal()
+```
+
+### 1. I/O and column manipulations
+
+We will use individual tree [spring phenology data at Harvard Forest](https://harvardforest1.fas.harvard.edu/exist/apps/datasets/showData.html?id=hf003) in this section
+
+```{r}
+
+df_phen = read_csv('./HF_spring_phenology.csv')
+print(head(df_phen,10))
+
+```
+
+```{r}
+# Rename columns
+df_phen <- rename(df_phen,
+                  tree_id = tree.id, 
+                  bb_doy = bb.doy, 
+                  fbb_doy = fbb.doy)
+
+print(colnames(df_phen))
+
+```
+
+```{r}
+# add a new column as the difference between
+# leaf budburst and flower budburst date
+
+df_phen$fbb_minus_bb = df_phen$fbb_doy - df_phen$bb_doy
+
+# alternatively
+df_phen = mutate(df_phen,fbb_minus_bb = fbb_doy - bb_doy)
+```
+
+```{r}
+# subset columns and then save
+df_phen <- df_phen[,c("year","tree_id","species","bb_doy","fbb_doy","fbb_minus_bb")]
+
+# alternatively
+df_phen <- df_phen %>%
+            dplyr::select(year,tree_id,species,bb_doy,fbb_doy,fbb_minus_bb)
+# specify the select function from dplyr package 
+# because there are several functions named select in different packages
+
+write_csv(df_phen,'./lab1_phenology.csv')
+```
+
+### 2. Indexing, subsetting, and grouping
+
+In data analysis and validation, we often need to get a subset of the full table either across the rows, the columns or both. For example, we often want to clean the data by removing all NaN values. These operations require familiarity with indexing (accessing specific row/columns), subsetting, and grouping (group rows based on certain values).
+
+In this section, we will introduce efficient ways to complete these tasks by working with `df_phen`
+
+```{r}
+# first explore the data, we will notice that there are some NaN values
+print(head(df_phen,20))
+```
+
+```{r}
+# let's count how many valid values are there for flower budburst dates
+valid_num <- sum(is.finite(df_phen$fbb_doy))
+
+# Count the number of NaN values
+nan_num <- sum(is.na(df_phen$fbb_doy))
+
+# Print the results
+print(valid_num)
+print(nan_num)
+```
+
+```{r}
+# if we want to access the 5th to the 10th row
+df_sub <- df_phen[5:10,]
+print(df_sub)
+```
+
+```{r}
+# now let's filter out all rows containing NaN values for fbb_doy
+
+df_valid <- df_phen %>% drop_na(fbb_doy)
+# if there is no specified column, the drop_na function
+# will remove rows that has NaN in any columns
+
+print(dim(df_valid)) # check how many data remains
+```
+
+```{r}
+# we would like to focus on fbb_doy, so let's remove the entire column of bb_doy
+df_valid = df_valid %>% dplyr::select(-bb_doy)
+print(colnames(df_valid))
+```
+
+In addition to filter NaN values, we often need to find a subset of the table based on values. For instance, how can we get a table for species `ACPE` (striped maple, *Acer pensylvanicum*) in year 2005?
+
+```{r}
+df_sub = df_valid %>% filter(species == "ACPE" & year == 2005)
+
+## alternatively if you want to use a query string, you can run the following
+## Define the query conditions
+#query_str <- quote(species == "ACPE" & year == 2005)
+## Use filter() to subset the data frame
+#df_sub <- df_valid %>% filter(!!query_str)
+
+print(df_sub)
+```
+
+Now let's consider a more complex scenario, we would like to calculate the mean flower budburst date for **each** species in the data set. We can use the grouping functionality
+
+```{r}
+df_mean <- df_valid %>% 
+  group_by(species) %>% 
+  summarize(mean_fbb = mean(fbb_doy, na.rm = TRUE))
+
+print(df_mean)
+# we now get a new table that records the mean flower budburst date
+```
+
+
+```{r}
+# we can also conduct nested grouping
+# say we would like to calculate average flower budburst for each species
+# in each year
+
+df_mean <- df_valid %>% 
+  group_by(species,year) %>% 
+  summarize(mean_fbb = mean(fbb_doy, na.rm = TRUE))
+
+print(df_mean)
+```
+
+#### [Practice 1]{style="color:royalblue"}
+
+Finish the following tasks based on the template above (and online search if needed): 
+
+-   Read in the `lab1_phenology.csv` that you have saved before.   
+-   Remove all NaN values in leaf budburst date `bb_doy`, report the number of records/rows remain  
+-   Calculate the average leaf budburst date (`bb_doy`) for `FAGR` (*Fagus grandifolia*, American Beech) for **each** year. Report the median of leaf budburst date across all years. Plot a boxplot of the inter-annual variation of its budburst dates   
+-   Calculate the multi-year average leaf budburst date for all species and plot a histogram of the cross-species variation in average budburst dates
+-   Find out which species has the latest leaf budburst date within the dataset.
+
+```{r}
+
+```
+
+
+#### [Practice 2]{style="color:royalblue"}
+
+Finish the following tasks based on the template above (and online search if needed):
+
+-   Read the `lab1_census.csv` data  
+-   Assign each row/record to a 20m by 20m subplot based on `X` and `Y` coordinates. Specifically, X dimension goes from 0-320, Y dimension goes from 0-500. Therefore, 0-20m in X and 0-20m in Y is one subplot and 20-40m in X and 0-20m in Y is another subplot. There should be 400 subplots (16 \* 25). Come up with your own subplot naming system and create a new column called `subplot_ID` to record the subplot for each tree/record/row.  
+-   Using the data above, calculate how many \>10cm (using column `dbh_c1_cm`) trees are there in **each** subplot and save it as a dataframe, and this new dataframe should contain two columns (`subplot_ID` and `tree_num`)
+-   Plot the distribution of the number of \>10cm trees across subplots using the new dataframe. Report its mean and standard deviation. What kind of theoretical distribution does it look like?
+
+```{r}
+
+```
+
+
