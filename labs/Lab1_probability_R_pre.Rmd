@@ -2,6 +2,8 @@
 output:
   html_document:
     df_print: paged
+editor_options: 
+  chunk_output_type: console
 ---
 
 # BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
@@ -334,6 +336,61 @@ Finish the following tasks based on the template above (and online search if nee
 -   Find out which species has the latest leaf budburst date within the dataset.
 
 ```{r}
+# Read in the data
+df_labphen <- read_csv("./lab1_phenology.csv")
+
+# See if there are NA values in `bb_doy`
+df_labphen$bb_doy |> 
+  is.na() |> 
+  sum() |> 
+  print()
+
+# There are 42 NA values in `bb_doy`
+
+# Remove the rows with NA values in `bb_doy`
+# Create a new df
+df_labphen_clean <- df_labphen |> 
+  drop_na(bb_doy)
+
+# Report number of remaining rows
+dim(df_labphen_clean) |> 
+  print()
+
+# Mean `bb_doy` for `FAGR` for each year
+df_labphen_clean |> 
+  filter(species == 'FAGR') |> 
+  group_by(year) |> 
+  summarise(mean_bb_doy = mean(bb_doy)) |> 
+  print()
+
+# Median `bb_doy` for all years
+df_labphen_clean$bb_doy |> 
+  median() |> 
+  print()
+
+# Boxplot of inter-annual variation of `bb_doy`
+df_labphen_clean |> 
+  ggplot(aes(y = bb_doy, x = year, group = year)) +
+  geom_boxplot(aes(fill = year))
+
+# Multi-year mean `bb_doy` for all spp
+df_labphen_clean |> 
+  group_by(species) |> 
+  summarise(mean_bb_doy = mean(bb_doy)) |> 
+  print()
+
+# Histogram of cross-spp var'n in mean `bb_doy`
+df_labphen_clean |> 
+  group_by(species) |> 
+  summarise(mean_bb_doy = mean(bb_doy)) |> 
+  ggplot(aes(x = mean_bb_doy, group = species)) +
+  geom_histogram()
+
+# Find sp with latest `bb_doy`
+df_labphen_clean |> 
+  group_by(species) |> 
+  summarise(max_bb_doy = max(bb_doy)) |> 
+  slice_max(max_bb_doy)
 
 ```
 
@@ -348,6 +405,11 @@ Finish the following tasks based on the template above (and online search if nee
 -   Plot the distribution of the number of \>10cm trees across subplots using the new dataframe. Report its mean and standard deviation. What kind of theoretical distribution does it look like?
 
 ```{r}
+# Read in the data
+df_labcensus <- read_csv("./lab1_census.csv")
+
+# 16 bins in the X-axis (1:16) and 25 bins in the Y-axis (A:Y)
+
 
 ```
 
