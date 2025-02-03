@@ -1,0 +1,59 @@
+---
+title: 'Lecture 3: Statistical Inference'
+author: "Hopper"
+date: "2025-02-03"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Inference
+
+"We have the data, but we don't know what the data generating process is"
+
+*Descriptive stats* is only concerned with observed data/samples, and *inferential stats* is concerned with the population/underlying natural processes.
+
+Descriptive stats (e.g., mean, variance, skewness, kurtosis of sample, etc.) only needs observed data.
+
+Inferential stats requires [fill tk]
+
+<br>
+
+## Point Estimate
+
+**Estimator** is a formula used to calculate an estimate
+
+* The estimator of θ is usually denoted as θ hat
+
+You always want to find a good-quality estimator. It has many dimensions
+
+* Bias: An estimator is unbiased if the mean value of the estimator under many repeated samplings from the population is equal to the parameter of interest.
+
+  * bias is the distance between, for example, the sample's mean and the population's mean.
+
+* Precision: The standard deviation of θhat under repeated sampling ("sample distribution"). An estimator is precise/efficient if se(θhat) is low.
+
+  * sd vs se: se (standard error) only applies to the estimator. sd (standard deviation) applies to the distribution of data
+
+* Consistency: An estimator θhat is consistent if its value converges in probability to θ when the sample size N increases indefinitely. A consistent estimator can be biased.
+
+So how does that all influence our stat'l analysis?
+
+<br>
+
+## Summary of above
+
+Infer population variance with sample data needs the (N-1) correction to make the estimator **unbiased**.
+
+Biased estimator can be consistent, which means if you have a **big enough** sample size, a biased estimator can be very close to true values.
+
+**Standard error** applies for the variation of the estimator, not the data. It usually decreases with sample size. It can be used to estimate the necessary sample size for the desired error level.
+
+<br>
+
+## 
+
+
+
