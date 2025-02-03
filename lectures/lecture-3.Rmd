@@ -53,7 +53,43 @@ Biased estimator can be consistent, which means if you have a **big enough** sam
 
 <br>
 
-## 
+## Confidence Interval
+
+Since inference is imperfect, we need an interval around it. This shows the range in which the true value should exist.
+
+Confidence Interval (CI): Random variable to describe the interval that can cover the true parameter value (fixed) above a given probability.
+
+<br>
+
+## Bootstrapping
+
+Used when a standard error/confidence interval cannot be easily derived analytically (e.g., median, quantiles, more complex metrics).
+
+Key idea of bootstrapping is to estimate the properties of population dist'n by **resampling the sample dist'n**
+
+* Can give you some ideas about the population
+
+General bootstrapping procedure includes:
+
+1. Draw *N* random samples (**with replacement**) from *N* observations
+
+2. Compute the estimator/parameter of interest (e.g., mean, variance, median, diversity indices)
+
+3. Repeat steps 1 and 2 for a large number of times (a few thousands or more) to get distribution of the estimator
+
+4. Calculate the properties of the estimator directly using the dist'n from step 3
+
+Bootstrapping limitation: your sample dist'n needs to actually be representative of the population dist'n.
+
+Advantages
+
+* Estiamte full dist'n of an estimator
+* Often simple to implement under current computational resources
+
+Disadvantages
+
+* Not guaranteed to be consistent, esp'ly for heavy-tailed dist'ns (e.g., log-normal, Pareto dist'n, Student's t-dist'n, etc.)
+* Would not be effective if the samples are inherently biased.
 
 
 
