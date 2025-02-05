@@ -1,0 +1,439 @@
+---
+output:
+  html_document:
+    df_print: paged
+---
+
+# BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
+
+### ***Spring 2025***
+
+### Instructor: **Xiangtao Xu** ( ✉️ [xx286\@cornell.edu](mailto:xx286@cornell.edu){.email})
+
+### Teaching Assistant: **Yixin Ma** (✉️ [ym524\@cornell.edu](mailto:ym524@cornell.edu){.email})
+
+## [Lab 2]{style="color:royalblue"} *Statistical inference and bootstrapping*
+
+In this Lab, we will keep working on tabular data and practice basic statistical inference (point estimate and confidence interval) and bootstrapping. We will also introduce more advanced figure plotting and tuning skills. The main learning objectives of today include:
+* Strengthen handling of tabular data
+* Calculate parametric point estimate and confidence interval
+* Conduct bootstrapping
+* Plot multi-panel figures and adjust axis properties
+
+For R users, please install necessary packages by running the following commands in your console install.packages(c('cowplot','lubridate'),dep=TRUE)
+
+### 0. Codes used in lecture
+
+This section contains code and figure examples mentioned in the course.
+
+#### 0.1 Mean and variance of palm tree size
+
+We will still use the Luquillo census data `./lab1_census.csv` which you should already have  
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse) # load the packages
+
+df_census <- read_csv('./lab1_census.csv')# read csv file
+
+```
+
+visualize the location of all palm trees with a scatterplot  
+
+```{r}
+library(ggplot2)
+
+
+# Create auxiliary information for plotting
+df_plot <- df_census %>%
+            drop_na(dbh_c1_cm) %>%
+            mutate(is_palm = SPECIES == "PREMON",
+                   point_size = 0.01 * dbh_c1_cm^2)
+
+# Create the plot using ggplot2 and tidyverse
+p <- ggplot(df_plot, aes(x = X, y = Y, size = point_size, color = is_palm)) +
+  geom_point(alpha = 0.4) +
+  labs(x = "X", y = "Y",) +
+  scale_size_area(max_size = 1)+
+  coord_fixed(ratio = 1) + 
+  guides(size=FALSE) + 
+  theme(legend.position="right")
+
+# scale_size_area allows for changing size of each dot
+# coord_fixed to make sure X/Y is displayed proportionally
+# guides() will set which legend to show
+# theme() command adjusts the location of the legend
+```
+
+
+```{r, fig.width=4,fig.height=4}
+# Print the plot
+p
+
+```
+
+##### 0.1.1 Calculate 'Population' mean and variance  
+
+```{r}
+df_palms <- df_census %>%
+              filter(SPECIES == "PREMON") %>%
+              drop_na(dbh_c1_cm)
+
+mu_pop = mean(df_palms$dbh_c1_cm)
+conversion_factor = (nrow(df_palms)-1)/nrow(df_palms)
+var_sample = var(df_palms$dbh_c1_cm)
+var_pop = var_sample * conversion_factor
+# we use a conversion factor because var function in R always use N-1 (sample variance)
+
+cat('mu_po is',round(mu_pop,2),'cm;',
+    'var_pop is',round(var_pop,2),'cm2')
+
+```
+
+##### 0.1.2 Draw 'samples' to check estimator bias and consistency  
+
+```{r}
+N_array <- seq(5, 25, 1)  # Sequence of sample sizes from 5 to 25
+K <- 50  # Repeat sampling 50 times for assessing bias
+
+# Initialize data frame
+df_experiment <- data.frame(matrix(ncol = 6, nrow = 0))
+colnames(df_experiment) <- c("mu_1",'mu_2','var_1','var_2','N','K')
+# mu_1 -> mean estimator mu = sum(X)/N
+# mu_2 -> mean estimator mu = sum(X)/(N-1)
+# var_1 -> population variance
+# var_2 -> sample variance
+
+# Set seed for reproducibility
+# set.seed(123)
+
+# Loop through different sample sizes
+for (i in seq_along(N_array)) {
+    N <- N_array[i]
+    
+    for (j in seq_len(K)) {
+        df_sample <- sample_n(df_palms, N, replace = FALSE)  
+        # Sample without replacement
+        # because we are not counting the same tree twice in the field
+        
+        # add a new row in the data frame by filling in the estimator values
+        df_experiment[nrow(df_experiment)+1,] = c(
+          sum(df_sample$dbh_c1_cm) / nrow(df_sample),
+          sum(df_sample$dbh_c1_cm) / (nrow(df_sample) - 1),
+          var(df_sample$dbh_c1_cm) * (nrow(df_sample) - 1) / nrow(df_sample),
+          var(df_sample$dbh_c1_cm),
+          N,
+          j
+        )
+    }
+}
+
+
+```
+
+```{r}
+# Aggregate mean values across repetitions
+
+df_stat <- df_experiment %>%
+    group_by(N) %>%
+    summarise(
+              se_mu_1 = sd(mu_1),
+              se_mu_2 = sd(mu_2),
+              se_var_1 = sd(var_1),
+              se_var_2 = sd(var_2),
+              mean_mu_1 = mean(mu_1), 
+              mean_mu_2 = mean(mu_2),
+              mean_var_1 = mean(var_1),
+              mean_var_2 = mean(var_2)
+              )
+```
+
+
+```{r}
+# Plot bias
+
+library(cowplot)
+
+# Plot for mean
+p1 <- ggplot(df_stat,aes(x=N)) +
+  geom_line(aes(y = mean_mu_1, color = "sum(X)/N"), linewidth = 1.2) +
+  geom_line(aes(y = mean_mu_2, color = "sum(X)/(N-1)"), linewidth = 1.2) +
+  geom_hline(aes(yintercept = mu_pop, color = "pop mu"), linetype = "dashed", linewidth = 1) +
+  labs(title = "Sample Mean", x = "Sample Size", y = "Mean Estimate") +
+  scale_color_manual(name = "Estimator", 
+                     values = c("sum(X)/N" = "blue", "sum(X)/(N-1)" = "red", "pop mu" = "black")) +
+  theme_minimal()
+
+#Plot for variance
+p2 <- ggplot(df_stat, aes(x = N)) +
+  geom_line(aes(y = mean_var_1, color = "ddof=0"), linewidth = 1.2) +
+  geom_line(aes(y = mean_var_2, color = "ddof=1"), linewidth = 1.2) +
+  geom_hline(aes(yintercept = var_pop, color = "pop var"),linetype = "dashed", linewidth = 1) +
+  labs(title = "Sample Variance", x = "Sample Size", y = "Variance Estimate") +
+  scale_color_manual(name = "Estimator", 
+                     values = c("ddof=0" = "blue", "ddof=1" = "red", "pop var" = "black")) +
+  theme_minimal()
+
+p <- plot_grid(p1, p2, nrow=2)
+p
+```
+
+```{r}
+# plot precision
+p1 <- ggplot(df_stat,aes(x=N)) +
+  geom_line(aes(y = se_mu_1, color = "sum(X)/N"), linewidth = 1.2) +
+  geom_line(aes(y = se_mu_2, color = "sum(X)/(N-1)"), linewidth = 1.2) +
+  labs(title = "Sample Mean Precision", x = "Sample Size", y = "standard error") +
+  scale_color_manual(name = "Estimator", 
+                     values = c("sum(X)/N" = "blue", "sum(X)/(N-1)" = "red")) +
+  theme_minimal()
+
+#Plot for variance
+p2 <- ggplot(df_stat, aes(x = N)) +
+  geom_line(aes(y = se_var_1, color = "ddof=0"), linewidth = 1.2) +
+  geom_line(aes(y = se_var_2, color = "ddof=1"), linewidth = 1.2) +
+  labs(title = "Sample Variance Precision", x = "Sample Size", y = "standard error") +
+  scale_color_manual(name = "Estimator", 
+                     values = c("ddof=0" = "blue", "ddof=1" = "red")) +
+  theme_minimal()
+
+p <- plot_grid(p1, p2, ncol=1)
+p
+```
+ 
+#### 0.2 Confidence interval
+
+```{r}
+df_plot <- df_experiment %>% filter(N == 15)
+
+p <- ggplot(df_plot, aes(x = mu_1, y=after_stat(density))) +
+  geom_histogram(binwidth=0.2,alpha = 0.5,position="identity") +
+  geom_vline(xintercept = mu_pop,
+             color = "red", linetype = "dashed",linewidth=2) +
+  labs(x = "Mean Size", y = "Prob. Dens.", title = "Distribution of Sample Mean") +
+  theme_minimal(base_size = 15) # increase base font size
+print(p)
+
+```
+
+```{r}
+# visualize confidence interval
+# assuming the CI can be estimated by 1.96 * sigma_hat / sqrt(N)
+N_sample = 15
+df_plot <- df_plot %>%
+            mutate(
+              ci_low = mu_1 - 1.96 * sqrt(var_2) / sqrt(N_sample),
+              ci_high = mu_1 + 1.96 * sqrt(var_2) / sqrt(N_sample)
+            )
+
+p <- ggplot(df_plot, aes(x = K)) +
+  geom_point(aes(y=mu_1),size = 1.5, color = "black") +  # Scatter points
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0.2, color = "black") +  # Vertical error bars
+  geom_hline(yintercept = mu_pop, color = "red", linetype = "dashed", linewidth = 1) +  # True population mean
+  labs(x = "Different random samples", y = "Estimated mean tree size [cm]") +
+  theme_minimal(base_size = 15)
+
+print(p)
+
+```
+ 
+#### 0.3 Bootstrapping
+
+We will bootstrap a 1-ha subplot within the 16 ha plot and estimate the uncertainty associated with big tree size and Simpson's index (individual count based)
+
+```{r}
+
+# Define function to calculate Simpson's Index
+get_simpson_index <- function(df_occurrence, colname = "SPECIES") {
+  # by default using the column called SPECIES
+  # Simpson Index = 1 / sum(sp prob. ** 2)
+  
+  # Count abundance for each species with the table function
+  df_counts <- table(df_occurrence[[colname]])
+  
+  # Normalize abundance into relative occurrence probability
+  total_num <- sum(df_counts)  # Total number of individuals
+  sp_prob <- df_counts / total_num  # Normalization
+  
+  # Calculate and return Simpson's Index
+  SI <- 1 / sum(sp_prob^2)
+  return(SI)
+}
+```
+
+```{r}
+
+# Filter data: Set 1ha (100x100) in the center of the plot
+df_valid <- df_census %>% drop_na(dbh_c1_cm)
+df_occurrence <- df_valid %>%
+                    filter(X >= (160 - 50),
+                           X < (160 + 50),
+                           Y >= (250 - 50),
+                           Y < (250 + 50)
+                           ) %>%
+                    select(SPECIES,dbh_c1_cm)
+          
+
+# Set up bootstrap
+K <- 1000  # Bootstrap 1000 times
+sample_N <- nrow(df_occurrence)  # Sample size
+
+df_summary <- data.frame(matrix(ncol = 3, nrow = 0))
+colnames(df_summary) <- c("dbh_p99",'SI','K')
+
+# Bootstrap iterations
+# set.seed(123)  # For reproducibility
+# you can also use replicate function to simplify the coding
+for (i in 1:K) {
+  df_bootstrap <- df_occurrence %>%
+                    sample_n(sample_N,replace = TRUE)
+  # !!! Use sample with replacement
+  # otherwise you will always get the same result
+  # equal to the input data
+  
+  # Compute statistics
+  df_summary[nrow(df_summary)+1,] = c(
+    as.numeric(quantile(df_bootstrap$dbh_c1_cm,0.99)),
+    get_simpson_index(df_bootstrap),
+    i
+  )
+
+}
+
+```
+
+```{r}
+# get the population value and 'true' sample value
+dbh_p99_pop = quantile(df_valid$dbh_c1_cm,0.99)
+SI_pop = get_simpson_index(df_valid %>% select(SPECIES,dbh_c1_cm))
+
+dbh_p99_sample = quantile(df_occurrence$dbh_c1_cm,0.99)
+SI_sample = get_simpson_index(df_occurrence)
+```
+
+
+```{r}
+# Plot distributions
+p1 <- ggplot(df_summary, aes(x = dbh_p99, y=after_stat(density))) +
+  geom_histogram(binwidth=0.5,alpha = 0.5,position="identity") +
+  geom_vline(aes(xintercept = dbh_p99_pop, color = "Pop"), linewidth=2) +
+  geom_vline(aes(xintercept = dbh_p99_sample, color = "1ha sample"),linewidth=2) +
+  scale_color_manual(name = "", values = c("1ha sample" = "black", "Pop" = "red")) +
+  labs(x = "99th percentile of tree size", y = "Prob. Dens.") +
+  theme_minimal(base_size = 15)
+
+p2 <- ggplot(df_summary, aes(x = SI, y=after_stat(density))) +
+  geom_histogram(binwidth=0.5,alpha = 0.5,position="identity") +
+  geom_vline(aes(xintercept = SI_pop, color = "Pop"),linewidth=2) +
+  geom_vline(aes(xintercept = SI_sample, color = "1ha sample"), linewidth=2) +
+  scale_color_manual(name = "", values = c("1ha sample" = "black", "Pop" = "red")) +
+  labs(x = "Simpson Index", y = "Prob. Dens.") +
+  theme_minimal(base_size = 15)
+
+p <- plot_grid(p1, p2, ncol = 1)
+p
+
+```
+  
+### 1. Save your figures
+
+Figure is usually saved as either **bitmap/raster** or **vector formats**. Bitmaps or raster graphics store the image as a grid of individual points (called pixels), each with a specified color. By contrast, vector graphics store the geometric arrangement of individual graphical elements in the image.
+
+Vector has the advantage of being ‘resolution-independent’, or ‘infinite zoom-in’. However, it can be rather *computationally intensive* for a massive figure (e.g. a plot with 1 million scatter points)
+
+For regular plots with mostly lines, we can use vector format (pdf or eps) or raster format (*tiff* or *png*) with high **dpi** (600). For scatterplots and maps, usually just use png/tiff with moderate dpi (300).  
+
+```{r}
+# let's compare the effect of saving different kind of figures
+
+# use the confidence interval figure as an example
+df_plot <- df_experiment %>% filter(N == 15)
+N_sample = 15
+df_plot <- df_plot %>%
+            mutate(
+              ci_low = mu_1 - 1.96 * sqrt(var_2) / sqrt(N_sample),
+              ci_high = mu_1 + 1.96 * sqrt(var_2) / sqrt(N_sample)
+            )
+
+p <- ggplot(df_plot, aes(x = K)) +
+  geom_point(aes(y=mu_1),size = 1.5, color = "black") +  # Scatter points
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0.2, color = "black") +  # Vertical error bars
+  geom_hline(yintercept = mu_pop, color = "red", linetype = "dashed", linewidth = 1) +  # True population mean
+  labs(x = "Different random samples", y = "Estimated mean tree size [cm]") +
+  theme_bw()
+
+print(p)
+
+```
+
+
+```{r}
+# save the figure and compare the different files
+ggsave('./lab2_fig_d150.png',p,width=4,height=3,dpi=150)
+ggsave('./lab2_fig_d300.png',p,width=4,height=3,dpi=300)
+ggsave('./lab2_fig_d600.png',p,width=4,height=3,dpi=600)
+ggsave('./lab2_fig.pdf',p,width=4,height=3)
+```
+
+### 2. Deal with time stamps
+
+Time series is common in ecology and environmental science. For instance, automatic data loggers in weather station will generate time series of key climatic variables. Compared to other tabular data, handling time series often requires processing time stamps, which are often recorded as strings. In this section, we will show ways to convert the strings to various time-relevant variables.
+
+We will use the rainfall time series `lab1_rainfall.csv`  
+
+```{r}
+df_rain = read_csv('./lab1_rainfall.csv')
+str(df_rain) 
+# the first column is date string, and it is stored as string
+```
+
+
+```{r}
+library(lubridate)
+
+df_rain = df_rain %>% 
+  mutate(date = as.Date(col1, format = "%B %d, %Y"), # convert to date format
+         year = year(date),     # Extract year
+         month = month(date),   # Extract month
+         day = day(date),       # Extract day
+         doy = yday(date))      # Extract Day of the Year
+```
+
+
+```{r}
+plot(df_rain$doy)
+```
+
+
+```{r}
+# rename and save the data frame
+df_rain = df_rain %>% 
+  rename(rain = col2)
+write_csv(df_rain, 'lab2_rainfall.csv')
+```
+
+
+#### <span style="color:royalblue">Practice 1</span>
+
+Finish the following tasks based on the template above (and online search if needed):  
+- Read in the `lab2_rainfall.csv` that you have saved above  
+- Using all rainy days in year 2001, estimate the mean (mu_hat) and standard deviation (sigma_hat) of rainfall amount in rainy days  
+- Use bootstrap to estimate the standard errors of mu_hat and sigma_hat (if possible use a function to wrap your process)  
+- Repeat the point estimate and confidence interval estimate using rainy day data across all years. How do they compare with 2001-only data?  
+
+
+
+#### <span style="color:royalblue">Practice 2</span>
+
+Finish the following tasks using `df_rain`:
+
+- for each `doy` (day of year), estimate the probability of having a rainfall event **using all the data (including both rainy days and dry days)**
+- for each `doy`, estimate the average rainfall amount **only using rainy day data**
+- Create a two panel figure. In the first panel plot the probability of rainfall event against doy. In the second panel, plot the average rainfall amount against doy. Save the fig as a `png` file with dpi of 300 and as a `pdf`  
+
+
+
+
+
+
+
+
