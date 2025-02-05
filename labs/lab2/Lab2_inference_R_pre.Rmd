@@ -485,6 +485,17 @@ Finish the following tasks using `df_rain`:
 - Create a two panel figure. In the first panel plot the probability of rainfall event against doy. In the second panel, plot the average rainfall amount against doy. Save the fig as a `png` file with dpi of 300 and as a `pdf`  
 
 
+```{r}
+# get a new column with the rainy days
+df_rain2 <- df_rain2 |> 
+  mutate(is_rain = (rain > 0))
+
+# estimate probability of rainfall event on each doy
+df_rain_prob <- df_rain2 |> 
+  group_by(doy) |> 
+  summarise(prob = mean(is_rain))
+
+```
 
 
 
