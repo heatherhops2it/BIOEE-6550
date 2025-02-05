@@ -423,6 +423,58 @@ Finish the following tasks based on the template above (and online search if nee
 - Repeat the point estimate and confidence interval estimate using rainy day data across all years. How do they compare with 2001-only data?  
 
 
+```{r}
+# read in the data
+df_rain2 <- read_csv("labs/lab2/lab2_rainfall.csv")
+
+# filter to just rainy days in 2001
+df_rain2_rainy <- df_rain2 |> 
+  filter(year == "2001",
+         rain > 0)
+
+# estimate the mean (mu_hat) and standard deviation (sigma_hat) of rainfall amount in rainy days
+mu_hat = mean(df_rain2_rainy$rain)
+sigma_hat = sd(df_rain2_rainy$rain)
+
+cat('mu_hat is',round(mu_hat,2),'mm;',
+    'sigma_hat is',round(sigma_hat,2),'mm')
+
+
+# Use bootstrap to estimate the standard errors of mu_hat and sigma_hat (if possible use a function to wrap your process)  
+bootstrap_standard_error = function(df_in, colname = "rain", K = 1000) {
+  mu_hat = numeric()
+  sigma_hat = numeric()
+  N = nrow(df_in)
+  for (i in 1:K) {
+    df_bootstrap = df_in |> 
+      sample_n(N, replace = TRUE)
+    mu_hat = append(mu_hat, mean(unlist(df_bootstrap[colname])))
+    sigma_hat = append(sigma_hat, sd(unlist(df_bootstrap[colname])))
+  }
+  
+  return(paste(sd(mu_hat), sd(sigma_hat), sep = "; "))
+}
+
+print(bootstrap_standard_error(df_rain2_rainy))
+
+
+
+# Repeat the point estimate and confidence interval estimate using rainy day data across all years
+df_sub = df_rain2 |>
+  filter(rain > 0)
+
+# point estimate
+mu_hat = mean(df_sub$rain)
+sigma_hat = sd(df_sub$rain)
+
+cat('mu_hat is',round(mu_hat,2),'mm;',
+    'sigma_hat is',round(sigma_hat,2),'mm;',
+    'standard errors are',bootstrap_standard_error(df_sub))
+
+```
+
+
+
 
 #### <span style="color:royalblue">Practice 2</span>
 

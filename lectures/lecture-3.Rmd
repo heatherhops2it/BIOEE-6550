@@ -92,4 +92,15 @@ Disadvantages
 * Would not be effective if the samples are inherently biased.
 
 
+<br>
+<br>
+
+Standard error is a special kind of standard deviation
+Describes how your mu will change if your data sampling has changed
+Shows the distribution of mean values (so requires bootstrapping) instead of the distribution of the raw data
+
+You can set *K* (number of repetitions in bootstrapping) to any number you want, but you'll get more stochastic when you choose a smaller number.
+
+
+
 
