@@ -131,7 +131,7 @@ OLS models are built on certain assumptions:
 - **Normality of residuals**. Use a Q-Q plot and Shapiro-Wilk test.
 
 - **Homoscedasticity** (equal variance across all X/Y values). Formal
-  tests are available.
+  tests are available; can also plot residuals against predicted Y.
 
 - **Outliers** (errors/other processes, which have a *disproportionate*
   effect on OLS results). Use Cook’s distance to diagnose.
@@ -140,4 +140,97 @@ OLS models are built on certain assumptions:
   spatial autocorrelation). Autoregressive models can help to capture
   some of the effects.
 
-You can see these tests using `lm()`
+You can see these tests using `lm()` in R.
+
+You can also compare Pearson’s *r* and Spearman’s *r* to test for
+normality of residuals. If they are noticeably different, you have
+problems.
+
+<br>
+
+#### Prediction
+
+TK
+
+<br> <br>
+
+## Multivariate regression (adding more X)
+
+What do we do when there are multiple factors that may impact the
+result? (Y as a result of X1 and X2 and X3 …)
+
+Additive effects
+
+- Y ~ X1 + X2
+
+<br>
+
+For multiple independent variables:
+
+- All assumptions for simple linear regression hold
+  - Linearity, independence,
+  - TK
+
+<br>
+
+Interactive effects
+
+- Y ~ X1 + X2 + X1 \* X2
+
+<br>
+
+**Overfitting**: Over-explanation of the error term that leads to
+reduced predictive power of a model.
+
+Always try to link coefficients/variables with data generating
+processes.
+
+<br>
+
+**Collinearity**
+
+It is less worrisome if the main purpose is for predictions (especially
+within the range of your training data).
+
+It is more problematic if the main purpose is for inference of causal
+relationships/sensitivity.
+
+A common sign of problematic collinearity is large changes in parameter
+coefficient when removing/adding explanatory variables.
+
+We can use the **Variance Inflation Factor** (VIF) to quantify the
+degree of collinearity.
+
+VIF \> 5 indicates mild collinearity. VIF \> 10 indicates severe
+collinearity.
+
+^ These are, however, a little subjective.
+
+Collinearity is easy to detect. Hard to deal with it, though. :/
+
+There are a number of recommendations:
+
+- Check the variables with high linearity and make sure they provide
+  different information/represent different hypotheses in your model
+- Separate your data into smaller subset and use regression model from
+  one subset to predict another (aka *cross-validation*). This helps to
+  estimate the imapct of collinearity to out-of-sample predictions.
+- Leave the variables as they are if both of them are significant, which
+  TK
+- TK
+- TK
+
+<br> <br>
+
+## Path Analysis/Structural Equation Modelling (adding more Y)
+
+Path analysis is structural equation modelling which can test a set of
+regression equations simultaneously.
+
+The diagrams you get can be pretty crazy.
+
+You need *a priori* definition of causal flow (directional acyclical
+graph). Usually you need to compare multiple graphs to see which one is
+the best.
+
+TK
