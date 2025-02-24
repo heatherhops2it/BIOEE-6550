@@ -113,3 +113,31 @@ Residuals are often assumed to be normally distributed with a zero mean
 and fixed variance.
 
 <br>
+
+#### Diagnostics
+
+You want some way to assess whether your model is good.
+
+TK
+
+<br>
+
+OLS models are built on certain assumptions:
+
+- **Linearity**. Visually tested through scatter plot but be careful
+  with extrapolation! (Linearity might not hold true outside of your
+  sample range)
+
+- **Normality of residuals**. Use a Q-Q plot and Shapiro-Wilk test.
+
+- **Homoscedasticity** (equal variance across all X/Y values). Formal
+  tests are available.
+
+- **Outliers** (errors/other processes, which have a *disproportionate*
+  effect on OLS results). Use Cook’s distance to diagnose.
+
+- **Independence** (experimental design, temporal autocorrelation,
+  spatial autocorrelation). Autoregressive models can help to capture
+  some of the effects.
+
+You can see these tests using `lm()`
