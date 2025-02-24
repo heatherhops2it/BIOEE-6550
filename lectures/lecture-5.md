@@ -56,11 +56,60 @@ If you have strong outliers, you might want to use Kendall’s tau.
 
 <br>
 
-# Correlation for circular data
+#### Correlation for circular data
 
 Circular data: data measured on a circular scale. (e.g., angles, wind
 direction, time of day, day or year, which has a *cyclic* nature).
 
 AKA directional or angular data.
 
-Often visualised in polar coordinates.
+Often visualised in polar coordinates (like a graph around a point)
+
+It’s important that we have special tests for circular data, because
+regular linear analysis might not catch patterns that exist.
+
+<br>
+
+Circular vs. linear variables: makes sense for my brain. A single circle
+graph.
+
+Circular vs. circular variables: difficult for me to visualise.
+
+<br>
+
+There are other circular statistics, too.
+
+**Circular mean**. TK
+
+**Circular variance** and circular standard deviation. E.g., is wind
+direction more variable in this month than that month?
+
+<br> <br>
+
+## Simple Linear (bi-variate) Regression
+
+Purpose of regression:
+
+TK
+
+<br>
+
+We can’t use the correlation coefficient to answer questions such as “if
+we increase radiation by 10W, the Net Ecosyste Exchange will change by
+how much?”
+
+We need to use the **regression coefficient** for that.
+
+Seeing how a change of a given amount will affect another variable is
+the **sensitivity**. Note that the sensitivity can change across the
+range of your variables. (e.g., a 10W change in radiation might change
+NEE by A amount at 200W, but by B amount at 400W).
+
+<br>
+
+The *error* of a regression model is called the **residual**.
+
+Residuals are often assumed to be normally distributed with a zero mean
+and fixed variance.
+
+<br>
