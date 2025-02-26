@@ -50,7 +50,7 @@ df_flux$HOD   <- hour(dt_flux) + minute(dt_flux) / 60 # hour of day
 
 ```
 
-We will check the correlation between (1) latent energy - a measure of evapotranspiration, (2) incoming solar radiation, and (3) air temperature at midday (midday defined as hour of day equal to 12)
+We will check the correlation between (1) latent energy `LE` - a measure of evapotranspiration, (2) incoming solar radiation `SW_IN_F`, and (3) air temperature at midday `TA_F` (midday defined as hour of day equal to 12)
 
 ```{r message=FALSE}
 df_corr <- df_flux %>%
@@ -154,6 +154,8 @@ p <- ggplot(June_wind_dir, aes(x = WD)) +
 print(p)
 ```
 
+HG: the above just makes a regular histogram, which is linear. That's not ideal, since the wind direction data are circular. The next chunk of code makes a circular plot of the same information.
+
 ```{r message=FALSE}
 # polar histogram
 
@@ -206,6 +208,8 @@ p <- plot_grid(p1,p2,ncol=2)
 print(p)
 ```
 
+HG: I do not understand what the difference is between the above chunk and the below chunk. This is where he said that this is two different ways to get the same output, but the *r* is different between the two outputs???
+
 ```{r fig.height=3,fig.width=8, message=FALSE}
 # use circular statistics
 library(circular) # for cor.circular
@@ -255,7 +259,7 @@ df_nee <- df_flux %>%
   mutate(across(everything(), ~ ifelse(. < -100, NA, .))) %>%
   drop_na()
 
-# Subset morning data (HOD < 12) for July
+# Subset morning data (HOD < 12) for July, then afternoon for the same
 df_am <- df_nee %>%
   filter(MONTH == 7 & HOD < 12)
 
@@ -269,6 +273,7 @@ cor_am <- round(cor(df_am$SW_IN, df_am$NEE, method = "pearson"),2)
 cor_pm <- round(cor(df_pm$SW_IN, df_pm$NEE, method = "pearson"),2)
 
 # Create a combined dataset with time of day labels
+# HG: this is so that you can get the labels to appear in the legend of the next plot
 df_am <- df_am %>% mutate(period = paste0("AM, r=",cor_am))
 df_pm <- df_pm %>% mutate(period = paste0("PM, r=",cor_pm))
 df_combined <- bind_rows(df_am, df_pm)
@@ -436,6 +441,63 @@ Finish the following tasks based on the template above (and online search if nee
 - Based on the correlation coefficients, which one has a stronger seasonality, methane flux or temperature?  
 - Does daily methane flux correlate with daily air temperature?
 
+```{r}
+df_pra1 <- df_flux |> 
+  filter(YEAR == 2017) |>
+  select(DOY, FCH4_F, TA_F) |> 
+  mutate(across(everything(), ~ ifelse(. <= -9999, NA, .))) |> 
+  drop_na() |> 
+  group_by(DOY) |> 
+  summarise(FCH4 = mean(FCH4_F), TA = mean(TA_F))
+
+p1 <- df_pra1 |> 
+  ggplot(aes(x = DOY, y = FCH4)) +
+  geom_line()
+p2 <- df_pra1 |> 
+  ggplot(aes(x = DOY, y = TA)) +
+  geom_line()
+
+p <- plot_grid(p1,p2,ncol=2)
+print(p)
+```
+
+```{r}
+## Calculate the correlation coefficient for 1) FCH4_F and DOY 2) TA_F and DOY (hint: is DOY a circular variable?)
+
+# turn DOY into radians???
+phi_DOY = circular(df_pra1$DOY / 365 * 2 * pi)
+
+# for FCH4
+corr_coef = round(
+  sqrt(
+    circlin.cor(
+      phi_DOY,
+      df_pra1$FCH4)),
+  2) 
+print(corr_coef)
+
+# for TA
+corr_coef <- round(
+  sqrt(
+    circlin.cor(
+      phi_DOY, 
+      df_pra1$TA)), 
+  2)
+print(corr_coef)
+
+```
+
+```{r}
+## Based on the correlation coefficients, which one has a stronger seasonality, methane flux or temperature?
+
+print("Temperature has a higher r-squared value, so has stronger seasonality(?)")
+```
+
+```{r}
+## Does daily methane flux correlate with daily air temperature?
+
+
+```
 
 
 #### [Practice 2]{style="color:royalblue"}
@@ -444,3 +506,8 @@ Finish the following tasks based on the template above (and online search if nee
 - Prepare a dataframe recording **daily** values of `FCH4_F`, `TA_F` (air temperature), `WTD_F` (water table depth), `SW_IN_F` (solar radiation), `P_F` (precipitation), and `WS_F` (wind speed). Please use valid data from 2013 to 2017 (5 years)  
 - Use multiple linear regression to investigate what factors drive day-to-day variability in methane flux. Check diagnostics for this regression analysis.  
 - Add the interactive effect of `P_F` and `TA_F` to the regression model. Based on the updated regression results, do these two variables have an interactive effect?
+
+```{r}
+## i spent all my time on practice 1 and have nothing for practice 2
+```
+

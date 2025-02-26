@@ -25,6 +25,8 @@ need to replace -9999 data, which indicates missing values, with `NA`
 
 in ggplot, you basically make a regular plot, but then use `coord_polar()` to make the plot on a circular plane
 
+when you are using circular data for a year, you can choose whether to use 365 or 366 for the number of days. you can also re-calculate for leap years individually. it's up to you and your willingness to incur a certain amount of error/data gap.
+
 for circular data:
 
 - first need to convert the data into radians
