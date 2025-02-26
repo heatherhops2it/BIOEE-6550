@@ -1,0 +1,444 @@
+---
+output:
+  html_document:
+    df_print: paged
+---
+
+# BIOEE 3550/6550 : **Data analysis and visualization in ecology and environmental science**
+
+### ***Spring 2025***
+
+### Instructor: **Xiangtao Xu** ( ✉️ [xx286\@cornell.edu](mailto:xx286@cornell.edu){.email})
+
+### Teaching Assistant: **Yixin Ma** (✉️ [ym524\@cornell.edu](mailto:ym524@cornell.edu){.email})
+
+## [Lab 4]{style="color:royalblue"} *Correlation and Linear Regression*
+
+In this Lab, the main learning objectives include: - Practice correlation analysis for linear and circular data - Generate polar coordinate plots - Practice OLS regressions and interpret the diagnostics - Generate diagnostic figures for OLS regressions
+
+For R users, please install necessary packages by running the following commands in your console `install.packages(c('circular','Rfast','lmtest','GGally'),dep=TRUE)`
+
+### 0. Codes used in lecture
+
+We will use the flux tower data at Howland Forest in Maine `flux_ho1_halfhourly.csv` as a demonstration data set
+
+#### 0.1 Correlation
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+df_flux <- read_csv('./flux_ho1_halfhourly.csv',show_col_types = FALSE)
+
+print(head(df_flux))
+
+```
+
+```{r message=FALSE}
+library(lubridate) # this is the library that allows us to easily extract date information
+
+# Convert the Time column to datetime type
+dt_flux <- ymd_hm(df_flux$TIMESTAMP_START)
+# you can also use as.POSIXct with format as an argument
+
+# Extract year, month, and day of year
+df_flux$DOY   <- yday(dt_flux)
+df_flux$YEAR  <- year(dt_flux)
+df_flux$MONTH <- month(dt_flux)
+df_flux$HOD   <- hour(dt_flux) + minute(dt_flux) / 60 # hour of day
+
+```
+
+We will check the correlation between (1) latent energy - a measure of evapotranspiration, (2) incoming solar radiation, and (3) air temperature at midday (midday defined as hour of day equal to 12)
+
+```{r message=FALSE}
+df_corr <- df_flux %>%
+  filter(HOD == 12) %>%
+  select(LE_F, SW_IN_F, TA_F) %>%
+  mutate(across(everything(), ~ ifelse(. <= -9999, NA, .))) %>% # Replace invalid values with NA
+  drop_na() # Remove rows with NA values
+
+# Rename columns
+colnames(df_corr) <- c("LE", "SW_IN", "TA")
+```
+
+```{r message=FALSE}
+library(ggplot2)
+library(cowplot)
+
+x_vars <- c("SW_IN", "TA", "SW_IN")
+y_vars <- c("LE", "LE", "TA")
+
+# List to store plots
+scatter_plots <- list()
+hexbin_plots <- list()
+kde_plots <- list()
+
+# Loop through variables and generate plots
+for (i in seq_along(x_vars)) {
+  
+  # Scatter plot with Pearson correlation
+  corr_coef = round(cor(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "pearson"),2)
+  p = cor.test(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "pearson")$p.value
+  p = signif(p,digits=2) # convert to scientific notation with two digits
+  p1 <- ggplot(df_corr, aes_string(x = x_vars[i], y = y_vars[i])) +
+    geom_point(alpha = 0.5, size = 1) +
+    labs(x = x_vars[i], y = y_vars[i], 
+         title=paste("Pearson r=",corr_coef,"p=",p)) +
+    theme_minimal()+
+    theme(plot.title=element_text(size=10))
+  
+  
+  scatter_plots[[i]] <- p1
+
+  # Hexbin plot with Kendall correlation
+  corr_coef = round(cor(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "kendall"),2)
+  p = cor.test(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "kendall")$p.value
+  p = signif(p,digits=2) # convert to scientific notation with two digits
+  p2 <- ggplot(df_corr, aes_string(x = x_vars[i], y = y_vars[i])) +
+    geom_hex(bins = 30, alpha = 0.7) +
+    scale_fill_viridis_c() +
+    labs(x = x_vars[i], y = y_vars[i],
+         title = paste("Kendall tau =",corr_coef,' p=',p)) +
+    theme_minimal() +
+    theme(legend.position = 'none')+
+    theme(plot.title=element_text(size=10))
+
+  hexbin_plots[[i]] <- p2
+
+  # KDE density plot with Spearman correlation
+  corr_coef = round(cor(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "spearman"),2)
+  p = cor.test(df_corr[[x_vars[i]]], df_corr[[y_vars[i]]], method = "spearman")$p.value
+  p = signif(p,digits=2) # convert to scientific notation with two digits
+  p3 <- ggplot(df_corr, aes_string(x = x_vars[i], y = y_vars[i])) +
+    geom_density_2d(color = "blue") +
+    labs(x = x_vars[i], y = y_vars[i],
+         title = paste("Spearman rho =",corr_coef,' p=',p)) +
+    theme_minimal()+
+    theme(plot.title=element_text(size=10))
+    
+  kde_plots[[i]] <- p3
+}
+
+# Combine all plots into a grid using cowplot
+final_plot <- plot_grid(
+  plot_grid(plotlist = scatter_plots, ncol = 3),
+  plot_grid(plotlist = hexbin_plots, ncol = 3),
+  plot_grid(plotlist = kde_plots, ncol = 3),
+  nrow = 3
+)
+
+# Display final plot
+print(final_plot)
+
+
+```
+
+#### 0.2 circular data
+
+We will check the wind direction data at Howland Forest
+
+```{r message=FALSE}
+June_wind_dir <- df_flux %>% 
+  filter(MONTH == 6, WD > -9999) %>% 
+  select(WD)
+# use select instead of pull here
+# pull will return a vector while
+# select will return a dataframe
+
+p <- ggplot(June_wind_dir, aes(x = WD)) +
+  geom_histogram(bins=30,alpha = 0.5,position="identity") +
+  labs(x = "Wind Direction [deg]", y = "Freq.") +
+  theme_minimal() # increase base font size
+print(p)
+```
+
+```{r message=FALSE}
+# polar histogram
+
+p <- ggplot(data=June_wind_dir) +
+  geom_histogram(aes(x = WD), binwidth=10, boundary = 0, alpha = 0.5) +
+  scale_x_continuous(limits = c(0, 360),
+                     breaks = seq(0,330,30)) +
+  coord_polar(start=0) + # plot the distribution in a polar coordinate system
+  labs(title = "Distribution of wind direction") +
+  theme_minimal()
+
+print(p)
+```
+
+Now let's prepare a data set that contains wind direction and net ecosystem exchange (NEE) in June, and we are interested in their diurnal variation.
+
+
+```{r message=FALSE}
+df_circ <- df_flux %>%
+  filter(MONTH == 6) %>%                      # Filter for June
+  select(DOY, HOD, NEE_F, WD) %>%             # Select relevant columns
+  mutate(across(everything(), ~ ifelse(. < -100, NA, .))) %>% # Replace values < -100 with NA
+  drop_na()                                   # Remove rows with NA values
+colnames(df_circ) <- c('DOY','HOD','NEE','WD')
+```
+
+```{r fig.height=3,fig.width=8, message=FALSE}
+# Hexbin plot with Kendall correlation
+corr_coef = round(cor(df_circ$HOD,df_circ$NEE, method = "pearson"),2)
+p1 <- ggplot(data=df_circ, aes(x = HOD, y = NEE)) +
+  geom_hex(bins = 25, alpha = 0.7) +
+  scale_fill_viridis_c()+
+  labs(x='Hour of Day',
+       y='Net Ecosystem Exchange',
+       title = paste("Circular vs Linear Variable, r=",corr_coef)) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+corr_coef = round(cor(df_circ$HOD,df_circ$WD, method = "pearson"),2)
+p2 <-ggplot(data=df_circ, aes(x = HOD, y = WD)) +
+  geom_hex(bins = 25, alpha = 0.7) +
+  scale_fill_viridis_c()+
+  labs(x='Hour of Day',
+       y='Wind Direction',
+       title = paste("Circular vs Circular Variable, r=",corr_coef)) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+p <- plot_grid(p1,p2,ncol=2)
+print(p)
+```
+
+```{r fig.height=3,fig.width=8, message=FALSE}
+# use circular statistics
+library(circular) # for cor.circular
+library(Rfast) # for circlin.cor
+phi_HOD = circular(df_circ$HOD / 24 * 2 * pi)
+phi_WD = circular(df_circ$WD / 360 * 2 * pi)
+# convert to radian
+
+# Circular to linear
+corr_coef = round(
+  sqrt(circlin.cor(phi_HOD,df_circ$NEE)),2)  
+# Correlation coefficient between one circular and one linear variable 
+# note that circlin.cor returns R2 instead of correlation coefficient R
+# that's why we need the sqrt() operation
+p1 <- ggplot(data=df_circ, aes(x = HOD, y = NEE)) +
+  geom_hex(bins = 25) +
+  scale_fill_viridis_c()+
+  labs(x='Hour of Day',
+       y='Net Ecosystem Exchange',
+       title = paste("Circular vs Linear Variable, r=",corr_coef)) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+corr_coef = round(cor.circular(phi_HOD,phi_WD),2)
+# Correlation coefficient between two circular variables.
+p2 <-ggplot(data=df_circ, aes(x = HOD, y = WD)) +
+  geom_hex(bins = 25) +
+  scale_fill_viridis_c()+
+  labs(x='Hour of Day',
+       y='Wind Direction',
+       title = paste("Circular vs Circular Variable, r=",corr_coef)) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+p <- plot_grid(p1,p2,ncol=2)
+print(p)
+```
+
+#### 0.3 Regression
+
+Regression can be used to characterize the sensitivity between X and Y, which is different for variable pairs with similar correlation.
+
+```{r message=FALSE}
+# here we are interested in the relationship between NEE and radiation in the morning VS afternoon
+df_nee <- df_flux %>%
+  select(NEE, SW_IN, MONTH, HOD) %>%
+  mutate(across(everything(), ~ ifelse(. < -100, NA, .))) %>%
+  drop_na()
+
+# Subset morning data (HOD < 12) for July
+df_am <- df_nee %>%
+  filter(MONTH == 7 & HOD < 12)
+
+df_pm <- df_nee %>%
+  filter(MONTH == 7 & HOD >= 12)
+```
+
+```{r message=FALSE}
+# Compute Pearson correlation for morning and afternoon datasets
+cor_am <- round(cor(df_am$SW_IN, df_am$NEE, method = "pearson"),2)
+cor_pm <- round(cor(df_pm$SW_IN, df_pm$NEE, method = "pearson"),2)
+
+# Create a combined dataset with time of day labels
+df_am <- df_am %>% mutate(period = paste0("AM, r=",cor_am))
+df_pm <- df_pm %>% mutate(period = paste0("PM, r=",cor_pm))
+df_combined <- bind_rows(df_am, df_pm)
+
+# Scatter plot with different colors for AM and PM
+ggplot(df_combined, aes(x = SW_IN, y = NEE, color = period)) +
+  geom_point(size=2,alpha=0.3) + 
+  labs(x = "Radiation", y = "Net Ecosystem Exchange") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+Let's conduct a linear regression to check the sensitivity of NEE to Radiation using the PM data
+
+```{r message=FALSE}
+
+# regression for radiation
+mod_1 = lm(NEE ~ SW_IN,data=df_pm)
+summary(mod_1)
+# how to interpret the results?
+```
+
+```{r message=FALSE}
+# plot figures for diagnostics - normality, homoscedasticity, outliers
+library(lmtest) # for bptest
+# prepare data
+plot_data = data.frame(pred_y = fitted(mod_1), resid = resid(mod_1), cd = cooks.distance(mod_1))
+
+p1 <- ggplot(data=NULL,aes(sample = scale(plot_data$resid)), distribution = qnorm) +
+  stat_qq() + stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Sample quantiles",
+       title = "Q-Q Plot")
+
+p_bp = bptest(mod_1)$p.value
+p2 <- ggplot(data = plot_data,aes(x = pred_y, y = resid)) +
+      geom_point(shape = 1, color = "black", alpha = 0.25) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) +
+      labs(title = paste0("B-P test,p=",  p = signif(p_bp,digits=2)))
+
+p3 <- ggplot(data = plot_data, aes(x=seq(1,length(cd)),y = cd)) + 
+      geom_point(shape = 1, color = "red",alpha = 0.25) + 
+      labs(title = "Cook's distance")
+  
+p <- plot_grid(p1,p2,p3,ncol=3)
+
+print(p)
+```
+
+Prediction confidence intervals
+
+```{r message=FALSE}
+# Predictions
+newdata <- data.frame(SW_IN = seq(min(df_pm$SW_IN), 
+                                  max(df_pm$SW_IN), 
+                                  length.out = 20))
+pred_nee <- predict(mod_1, newdata = newdata, interval = "confidence") 
+# confidence of the mean
+
+df_pred = data.frame(SW_IN = newdata, 
+                     NEE = pred_nee[,1],
+                     ci_lower = pred_nee[,2],
+                     ci_upper = pred_nee[,3])
+# Plot
+ggplot() +
+  geom_point(data = df_pm, aes(x = SW_IN, y = NEE), color = "black",
+             size = 1, alpha = 0.5) +
+  geom_line(data = df_pred, aes(x = SW_IN, y = NEE), color = "red") +
+  geom_ribbon(data = df_pred, aes(x = SW_IN, ymin = ci_lower, ymax = ci_upper), 
+              fill = "red", alpha = 0.3) +
+  labs(x = "SW_IN", y = "NEE", title = "Regression Lines Over Raw Data") +
+  theme_minimal()
+```
+
+#### 0.4 Multiple Linear Regression
+
+Prepare data
+
+```{r message=FALSE}
+# extract daytime NEE and associated environmental variables
+# radiation, temperature, vapor pressure deficit, wind speed
+df_mlr <- df_flux %>%
+  filter(MONTH == 7 & HOD > 6 & HOD < 18) %>%
+  select(NEE_F, SW_IN_F, TA_F, VPD_F, WS_F, HOD) %>%
+  mutate(across(everything(), ~ ifelse(. < -100, NA, .))) %>%
+  drop_na()
+colnames(df_mlr) <- c('NEE','SW_IN','TA','VPD','WS','HOD')
+```
+
+```{r message=FALSE}
+library(GGally) # pairwise grid plots in ggplot style
+
+# Create a pairwise histogram plot
+ggpairs(df_mlr[, c("NEE", "SW_IN", "TA", "VPD")],
+        lower = list(continuous = "density")) +  # Correlation in upper panel
+  theme_minimal()
+```
+
+Set up model
+
+```{r message=FALSE}
+mod_mlr = lm(NEE ~ SW_IN + TA + VPD + WS + SW_IN : VPD,data=df_mlr)
+# alternatively we can use
+# mod_mlr = lm(NEE ~ SW_IN * VPD + TA + VPD + WS ,data=df_mlr)
+summary(mod_mlr)
+```
+
+```{r message=FALSE}
+# diagnostics
+
+# prepare data
+plot_data = data.frame(pred_y = fitted(mod_mlr), 
+                       resid = resid(mod_mlr), 
+                       cd = cooks.distance(mod_mlr))
+
+p1 <- ggplot(data=NULL,aes(sample = scale(plot_data$resid)), distribution = qnorm) +
+  stat_qq() + stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Sample quantiles",
+       title = "Q-Q Plot")
+
+p_bp = bptest(mod_mlr)$p.value
+p2 <- ggplot(data = plot_data,aes(x = pred_y, y = resid)) +
+      geom_point(shape = 1, color = "black", alpha = 0.25) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) +
+      labs(title = paste0("B-P test,p=",  p = signif(p_bp,digits=2)))
+
+p3 <- ggplot(data = plot_data, aes(x=seq(1,length(cd)),y = cd)) + 
+      geom_point(shape = 1, color = "red",alpha = 0.25) + 
+      labs(title = "Cook's distance")
+  
+p <- plot_grid(p1,p2,p3,ncol=3)
+
+print(p)
+
+```
+
+Collinearity and VIF
+
+```{r message=FALSE}
+library(car)
+
+# let's check the model without interactive effects
+# it can be tricky to define and calculate VIF for models with interactive effect
+VIF <- vif(mod_mlr)
+print(VIF)
+```
+
+SW_IN:VPD has too strong collinearity, let's remove it
+
+```{r message=FALSE}
+mod_mlr = lm(NEE ~ SW_IN + TA + VPD + WS ,data=df_mlr)
+summary(mod_mlr)
+VIF <- vif(mod_mlr)
+print(VIF)
+```
+
+#### [Practice 1]{style="color:royalblue"}
+
+Finish the following tasks based on the template above (and online search if needed):  
+- We will work with the methane flux measurements `FCH4_F` and air temperature `TA_F` in the flux data we have been using.  
+- Extract valid data in 2017, calculate average `FCH4_F` and `TA_F` for each day. The final dataset should contain three columns: `DOY`, `FCH4_F`, `TA_F`  
+- Visualize seasonal cycle of daily `FCH4_F` and `TA_F` (`DOY` on the x axis, daily methane flux/temperature on the y axis)  
+- Calculate the correlation coefficient for 1) `FCH4_F` and `DOY` 2) `TA_F` and `DOY` (hint: is DOY a circular variable?)  
+- Based on the correlation coefficients, which one has a stronger seasonality, methane flux or temperature?  
+- Does daily methane flux correlate with daily air temperature?
+
+
+
+#### [Practice 2]{style="color:royalblue"}
+
+Finish the following tasks based on the template above (and online search if needed):  
+- Prepare a dataframe recording **daily** values of `FCH4_F`, `TA_F` (air temperature), `WTD_F` (water table depth), `SW_IN_F` (solar radiation), `P_F` (precipitation), and `WS_F` (wind speed). Please use valid data from 2013 to 2017 (5 years)  
+- Use multiple linear regression to investigate what factors drive day-to-day variability in methane flux. Check diagnostics for this regression analysis.  
+- Add the interactive effect of `P_F` and `TA_F` to the regression model. Based on the updated regression results, do these two variables have an interactive effect?

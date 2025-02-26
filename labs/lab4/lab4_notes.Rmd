@@ -1,0 +1,13 @@
+---
+title: "Lab 4 notes"
+author: "Hopper"
+date: "2025-02-26"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+working on circular data
+
