@@ -9,3 +9,40 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Residuals: if negative, the datapoint is below average. If positive, the datapoint is above average.
+
+You can plot out your residuals spatially, to see if there is a link between the residuals and some spatial distribution. This is important. You theoretically want a random distribution of various values of residual.
+
+<br>
+
+## TK?
+
+Hierarchical data
+
+Simpson's paradox in ecology
+
+* This phenomenon is called Simpson's Paradox in statistics, describing the large differences between within-group variation and cross-group variation. 
+
+* More complex: nested groups (family/genus/species, etc)
+
+* There might be connections between groups
+
+Solution? Linear Mixed Models (LLMs)
+
+* Starts with the basis that you average out each group to make a regression, then run within-group regressions on top of that. (This is a naive solution, and not good enough on its own)
+
+* They introduce *fixed effects* (shared relationship/coefficient across all groups/levels) and *random effects* (stochastic part of the fixed effect in each group)
+
+<br>
+
+There's also Random Intercept Models (RIMs (?))
+
+<br>
+
+Something about extracting variance will get you the percent of variance associated with each variable you're looking at. This is important because it tells you which variables are most important (most contributory to the effect you are seeing).
+
+<br>
+
+
+
+
