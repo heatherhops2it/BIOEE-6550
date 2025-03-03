@@ -1,0 +1,11 @@
+---
+title: "Lecture 6 - Linear Regression II"
+author: "Hopper"
+date: "2025-03-03"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
